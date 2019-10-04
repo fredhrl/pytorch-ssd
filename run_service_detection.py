@@ -77,20 +77,33 @@ cv2.namedWindow(main_wnd_name, cv2.WINDOW_NORMAL)
 
 signal = []
 
-c1, c2 = 20, 90
+c1, c2 = 30, 120
 
 timer = Timer()
 while True:
     ret, orig_image = cap.read()
-    if orig_image is None:
-        signal.append(0)
-        continue
+    if not ret:
+        df = pd.DataFrame(signal, columns=["Signal"])
+        print(df.keys())
+        df.to_csv(
+            "./" + sys.argv[4].split("/")[-1].split(".")[0] + ".csv",
+            index=None,
+            sep=" ",
+            mode="a",
+        )
+        break
+
     m, n, c = orig_image.shape
     x, xf, y, yf = c1, m - c1, c2, n - c2
     orig_image = orig_image[x:xf, y:yf]
     image = cv2.cvtColor(orig_image, cv2.COLOR_BGR2RGB)
     timer.start()
-    boxes, labels, probs = predictor.predict(image, 10, 0.5)
+    boxes, labels, probs = predictor.predict(image, 10, 0.8)
+
+    if len(boxes) is 0:
+        signal.append(0)
+        continue
+
     interval = timer.end()
     # print('Time: {:.2f}s, Detect Objects: {:d}.'.format(interval, labels.size(0)))
     for i in range(boxes.size(0)):
@@ -107,7 +120,7 @@ while True:
                 label,
                 (box[0] + 20, box[1] + 40),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                1,  # font scale
+                0.5,  # font scale
                 (255, 0, 255),
                 2,
             )  # line type
@@ -120,7 +133,6 @@ while True:
         df = pd.DataFrame(signal, columns=["Signal"])
         df.to_csv(
             "./" + sys.argv[4].split("/")[-1].split(".")[0] + ".csv",
-            header=None,
             index=None,
             sep=" ",
             mode="a",
